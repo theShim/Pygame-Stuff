@@ -1,0 +1,92 @@
+import os
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+import contextlib
+with contextlib.redirect_stdout(None):
+    import pygame
+    from pygame.locals import *
+    
+import random
+import sys
+import math
+import time
+import numpy as np
+
+    ##############################################################################################
+
+#initialising pygame stuff
+pygame.init()  #general pygame
+pygame.font.init() #font stuff
+pygame.mixer.pre_init(44100, 16, 2, 4096) #music stuff
+pygame.mixer.init()
+pygame.event.set_blocked(None) #setting allowed events to reduce lag
+pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP])
+pygame.display.set_caption("")
+
+#initalising pygame window
+flags = pygame.DOUBLEBUF #| pygame.FULLSCREEN
+SIZE = WIDTH, HEIGHT = (720, 720)
+screen = pygame.display.set_mode(SIZE, flags)
+clock = pygame.time.Clock()
+
+#renaming common functions
+vec = pygame.math.Vector2
+
+#useful functions
+def gen_colour():
+    return (random.randint(100, 255), random.randint(100, 255), random.randint(100, 255))
+
+def euclidean_distance(point1, point2):
+    return vec(point1).distance_to(vec(point2))
+
+def rotate(origin, point, angle):
+    ox, oy = origin
+    px, py = point
+    angle = math.radians(angle)
+
+    qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
+    qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
+    return vec(qx, qy)
+
+    ##############################################################################################
+
+img = pygame.transform.scale(img := pygame.image.load("img.png"), vec(img.size) * 0.25).convert_alpha()
+img.set_colorkey((0, 0, 0))
+old_img = img.copy()
+
+overlay = pygame.Surface(img.size, pygame.SRCALPHA)
+overlay.fill((255, 255, 255))
+pygame.draw.polygon(overlay, (0, 0, 0), [(50, 50), (120 * 2, 190), (80 * 2, 250), (20, 120)])
+img.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGB_SUB)
+
+    ##############################################################################################
+
+last_time = time.time()
+
+running = True
+while running:
+
+    dt = time.time() - last_time
+    last_time = time.time()
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_q:
+                running = False
+
+    screen.fill((30, 30, 30))
+    screen.blit(img, img.get_rect(center=(WIDTH/2, HEIGHT/2 + 150)))
+    screen.blit(old_img, old_img.get_rect(center=(WIDTH/2, HEIGHT/2 - 150)))
+
+    #fps
+    font = pygame.font.SysFont('monospace', 30)
+    fps = font.render(f'FPS: {int(clock.get_fps())}', True, (215, 215, 215))
+    screen.blit(fps, (0, 0))
+
+    pygame.display.update()
+    clock.tick(60)
+
+pygame.quit()
+sys.exit()
